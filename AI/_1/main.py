@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 '''
 数据加载
 '''
+
+
 def load_data():
     #   训练数据
     train_data = h5py.File("./datasets/train_catvnoncat.h5", "r")
@@ -27,26 +29,35 @@ def load_data():
 
     return train_x, train_y, test_x, test_y, classes
 
+
 '''
 sigmod激活函数:
     经过sigmod算法计算后的值在[0,1]范围内
 '''
+
+
 def sigmod(z):
     s = 1 / (1 + np.exp(-z))
     return s
+
 
 '''
 初始化w和b的值:
     dim是特征的个数,一个特征对应一个权重参数
 '''
+
+
 def initialize_with_zeros(dim):
     w = np.zeros((dim, 1))
     b = 0
     return w, b
 
+
 '''
 一次前向传播和反向传播
 '''
+
+
 def propagate(w, b, X, Y):
     #   样本个数
     m = X.shape[1]
@@ -67,10 +78,13 @@ def propagate(w, b, X, Y):
     }
     return grads, cost
 
+
 '''
 迭代优化:
     不断的对参数w和b进行梯度下降,从而减少成本
 '''
+
+
 def optimize(w, b, train_x, train_y, num_iterations, learning_rate, print_cost=False):
     costs = []
     for i in range(num_iterations):
@@ -97,14 +111,17 @@ def optimize(w, b, train_x, train_y, num_iterations, learning_rate, print_cost=F
 预测:
     使用迭代之后的w和b参数来对册数数据进行预测
 '''
+
+
 def predict(w, b, test_x):
-    m = test_x.shape[1] #   数据个数
-    y_prediction = np.zeros((1, m)) #   用来存放预测结果
+    m = test_x.shape[1]  # 数据个数
+    y_prediction = np.zeros((1, m))  # 用来存放预测结果
     A = sigmod(np.dot(w.T, test_x) + b)
     for i in range(A.shape[1]):
         if A[0, i] >= 0.5:
             y_prediction[0, i] = 1
     return y_prediction
+
 
 '''
 神经网络模型:
@@ -116,6 +133,8 @@ def predict(w, b, test_x):
     learning_rate=0.5:  学习率
     print_cost=False:   每百次是否打印损失/成本
 '''
+
+
 def model(train_x, train_y, test_x, test_y, num_iterations=2000, learning_rate=0.5, print_cost=False):
     #   初始化参数
     w, b = initialize_with_zeros(train_x.shape[0])
@@ -164,17 +183,21 @@ print("便于矩阵运算扁平化和转置")
 train_x = train_x.reshape((train_x.shape[0], -1)).T
 #   (50,64,64,3) -> (50,64 * 64 * 3) -> (64 * 64 * 3,50)
 test_x = test_x.reshape((test_x.shape[0], -1)).T
+
 print("标准化,像素值除以255,使所有的值都在[0,1]范围")
 train_x = train_x / 255
 test_x = test_x / 255
 
+print("试运行一次模型....")
 d = model(train_x, train_y, test_x, test_y, num_iterations=2000, learning_rate=0.005, print_cost=True)
 
+print("使用试运行参数预测一次...")
 index = 8
 plt.imshow(test_x[:, index].reshape((num_px, num_px, 3)))
 plt.show()
 print("图片实际标签: " + str(test_y[0, index]) + " 图片预测标签: " + str(d["y_predict_test"][0, index]))
 
+print("试运行成本走势图...")
 costs = np.squeeze(d["costs"])
 plt.plot(costs)
 plt.ylabel("cost")
@@ -182,12 +205,13 @@ plt.xlabel("iterations (per hundreds)")
 plt.title("Learning rate = " + str(d["learning_rate"]))
 plt.show()
 
+print("不同的学习率下的成本走势图...")
 learning_rates = [0.01, 0.001, 0.0001]
 models = {}
 for i in learning_rates:
     print("学习率为: " + str(i) + "时")
     models[str(i)] = model(train_x, train_y, test_x, test_y, num_iterations=1500, learning_rate=i, print_cost=False)
-    print("\n----------------------------------------------------\n")
+    print("\n----------------------------\n")
 
 for i in learning_rates:
     plt.plot(np.squeeze(models[str(i)]["costs"]), label=str(models[str(i)]["learning_rate"]))
@@ -198,3 +222,18 @@ legend = plt.legend(loc="upper center", shadow=True)
 frame = legend.get_frame()
 frame.set_facecolor("0.90")
 plt.show()
+
+print("预测自己提供的图片....")
+
+import skimage.transform as tf
+
+my_image = "my_image1.jpg"
+fname = "./images/" + my_image
+
+image = np.array(plt.imread(fname))
+my_image = tf.resize(image, (num_px, num_px), mode="reflect",anti_aliasing=False).reshape((1, num_px * num_px * 3)).T
+my_predicted_image = predict(d["w"], d["b"], my_image)
+
+plt.imshow(my_image.reshape((num_px,num_px,3)))
+plt.show()
+print("预测结果为: " + str(int(np.squeeze(my_predicted_image))))
