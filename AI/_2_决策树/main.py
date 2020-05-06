@@ -3,12 +3,13 @@ import math
 import re
 import numpy as np
 import pandas as pd
+from collections import Counter
 from sklearn.model_selection import train_test_split
 
 
 def get_data():
     irisCsv = pd.read_csv("./datasets/iris.csv", header=1)
-    dataset = np.array(irisCsv).tolist()
+    dataset = np.array(irisCsv)
     labels = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
     return dataset, labels
 
@@ -23,7 +24,7 @@ def max_class(classes):
 
 
 def max_class_by_dataset(dataset):
-    classes = [vector[-1] for vector in dataset]
+    classes = dataset[:, -1]
     return max(classes, key=labels.count)
 
 
@@ -41,8 +42,7 @@ def choose_feature_cart(dataset):
     feature_point = None  # 最佳分裂特征对应的特征值
 
     for i in range(nums_feature):
-        feature_i_set = [vector[i] for vector in dataset]  # 特征i的所有取值
-        feature_i_set = list(set(feature_i_set))  # 特征i去重后的所有取值
+        feature_i_set = list(set(dataset[:, i]))  # 特征i去重后的所有取值
         feature_i_gini = 0  # 特征i的基尼系数总和
         feature_i_min_gini = float("inf")  # 特征i的取每个特征值后剩余数据的基尼系数的最小值
         feature_i_point = None  # 特征i中最小的基尼系数对应的特征值
@@ -81,8 +81,7 @@ def choose_feature(dataset, algorithm="ID3"):
     max_information_gain_ratio = float("-inf")
     feature_index = 0
     for i in range(nums_feature):
-        feature_i_set = [vector[i] for vector in dataset]
-        feature_i_set = set(feature_i_set)
+        feature_i_set = set(dataset[:, i])
         condition_entropy = 0  # 条件熵
         feature_entropy = 0  # 特征i的分裂信息度量（SplitInformation）
 
@@ -111,12 +110,8 @@ def choose_feature(dataset, algorithm="ID3"):
 
 def get_entropy(dataset):
     nums_data = len(dataset)
-    count_labels = {}
+    count_labels = Counter(dataset[:, -1])
     entropy = 0
-    for vector in dataset:
-        if vector[-1] not in count_labels:
-            count_labels[vector[-1]] = 0
-        count_labels[vector[-1]] += 1
     for key in count_labels:
         p = float(count_labels[key] / nums_data)
         entropy -= p * math.log(p, 2)
@@ -131,12 +126,8 @@ def get_entropy(dataset):
 
 def get_gini(dataset):
     nums_data = len(dataset)
-    count_labels = {}
     p_sum = 0
-    for vector in dataset:
-        if vector[-1] not in count_labels:
-            count_labels[vector[-1]] = 0
-        count_labels[vector[-1]] += 1
+    count_labels = Counter(dataset[:, -1])
     for key in count_labels:
         p = float(count_labels[key] / nums_data)
         p_sum += p ** 2
@@ -150,17 +141,8 @@ def get_gini(dataset):
 
 
 def split_dataset_cart(dataset, feature_index, feature_value):
-    right = []
-    left = []
-
-    for vector in dataset:
-        split = vector[:feature_index]
-        split.extend(vector[feature_index + 1:])
-        if vector[feature_index] >= feature_value:
-            right.append(split)
-        else:
-            left.append(split)
-
+    right = np.delete(dataset[dataset[:, feature_index] >= feature_value], feature_index, axis=1)
+    left = np.delete(dataset[dataset[:, feature_index] < feature_value], feature_index, axis=1)
     return len(right), right, len(left), left
 
 
@@ -170,13 +152,7 @@ def split_dataset_cart(dataset, feature_index, feature_value):
 
 
 def split_dataset(dataset, feature_index, feature_point):
-    sub_dataset = []
-    for vector in dataset:
-        if vector[feature_index] == feature_point:
-            split = vector[:feature_index]
-            split.extend(vector[feature_index + 1:])
-            sub_dataset.append(split)
-
+    sub_dataset = np.delete(dataset[dataset[:, feature_index] == feature_point], feature_index, axis=1)
     return len(sub_dataset), sub_dataset
 
 
@@ -195,7 +171,7 @@ class DecisionTree(object):
         return tree
 
     def create_tree(self, dataset, labels):
-        classes = [vector[-1] for vector in dataset]
+        classes = dataset[:, -1]
         if len(set(classes)) == 1:
             return classes[0]
         if len(dataset[0]) == 1:
@@ -205,7 +181,7 @@ class DecisionTree(object):
         tree = {feature_label: {}}
         labels = copy.deepcopy(labels)
         del labels[feature_index]
-        feature_value_list = list(set([vector[feature_index] for vector in dataset]))
+        feature_value_list = list(set(dataset[:, feature_index]))
         feature_value_list.sort()
         for feature_point in feature_value_list:
             nums_sub_dataset, sub_dataset = split_dataset(dataset, feature_index, feature_point)
@@ -219,7 +195,7 @@ class DecisionTree(object):
     '''
 
     def create_tree_cart(self, dataset, labels):
-        classes = [vector[-1] for vector in dataset]
+        classes = dataset[:, -1]
         if len(set(classes)) == 1:  # 如果只有一个分类，直接返回该分类
             return classes[0]
         if len(dataset[0]) == 1:  # 如果只有一个特征，直接返回分类出现次数最多的分类
@@ -280,11 +256,12 @@ if __name__ == "__main__":
     test_size: 测试集比例
     random_state: 随机种子
     '''
-    x_train, x_test = train_test_split(dataset, test_size=0.25, random_state=None)
+    x_train, x_test = train_test_split(dataset, test_size=0.01, random_state=0)
     '''
     构建决策树
     '''
-    tree = DecisionTree(x_train, labels, "create_tree")
+    # tree = DecisionTree(x_train, labels, "create_tree")
+    tree = DecisionTree(x_train, labels, "create_tree_cart")
     decision_tree = tree.main()
     print(decision_tree)
     '''
