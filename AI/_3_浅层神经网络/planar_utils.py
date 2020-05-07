@@ -4,13 +4,15 @@ import numpy as np
 '''
 生成玫瑰花数据集
 '''
+
+
 def get_planar_dataset():
     np.random.seed(1)
-    m = 400 # 样本个数
+    m = 400  # 样本个数
     N = int(m / 2)
-    D = 2 # 特征数量
-    X = np.zeros((m, D)) # 0初始化数据
-    Y = np.zeros((m, 1), dtype="uint8") # 初始化数据标签
+    D = 2  # 特征数量
+    X = np.zeros((m, D))  # 0初始化数据
+    Y = np.zeros((m, 1), dtype="uint8")  # 初始化数据标签
     a = 4
 
     for j in range(2):
