@@ -8,6 +8,7 @@ plt.rcParams["image.interpolation"] = "nearest"
 plt.rcParams["image.cmap"] = "gray"
 
 np.random.seed(1)
+epsilon = 1e-5
 
 
 def initial_params(layer_dims):
@@ -79,7 +80,8 @@ def propagate_forward_L(X, params):
 
 def get_cost(AL, Y):
     m = Y.shape[1]
-    cost = (-1 / m) * np.sum(np.multiply(Y, np.log(AL)) + np.multiply(1 - Y, np.log(1 - AL)))
+    cost = (-1 / m) * np.sum(np.multiply(Y, np.log(AL + epsilon)) + np.multiply(1 - Y, np.log(1 - AL + epsilon)))
+    # cost = (-1 / m) * np.sum(np.multiply(Y, np.log(AL)) + np.multiply(1 - Y, np.log(1 - AL)))
     cost = np.squeeze(cost)
     assert cost.shape == ()
 
@@ -111,19 +113,25 @@ def propagate_active_backward(dA, cache, activation):
     return propagate_backward_linear(dZ, linear_cache)
 
 
-def propagation_backward_L(AL, Y, caches):
+def propagate_backward_L(AL, Y, caches):
     grads = {}
     L = len(caches)
     Y = Y.reshape(AL.shape)
 
-    dAL = -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
+    # dAL = -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
+    # 最后一个激活函数是sigmod dz = A-Y
     current_cache = caches[-1]
-    grads["dA" + str(L - 1)], grads["dW" + str(L)], grads["db" + str(L)] = propagate_active_backward(dAL, current_cache,
-                                                                                                     "sigmoid")
-
+    dZ = sigmoid(current_cache[1]) - Y
+    grads["dA" + str(L - 1)], grads["dW" + str(L)], grads["db" + str(L)] = propagate_backward_linear(
+        dZ,
+        current_cache[0]
+    )
+    # 后面的激活函数是relu
     for c in reversed(range(1, L)):
         grads["dA" + str(c - 1)], grads["dW" + str(c)], grads["db" + str(c)] = propagate_active_backward(
-            grads["dA" + str(c)], caches[c - 1], "relu")
+            grads["dA" + str(c)],
+            caches[c - 1], "relu"
+        )
 
     return grads
 
@@ -157,9 +165,9 @@ class Model(object):
             AL, caches = propagate_forward_L(self.X, params)
             cost = get_cost(AL, self.Y)
             costs.append(cost)
-            grads = propagation_backward_L(AL, self.Y, caches)
+            grads = propagate_backward_L(AL, self.Y, caches)
             params = update_params(params, grads, self.learning_rate)
-            if self.print_cost and i % 100 == 0:
+            if self.print_cost and i > 0 and i % 100 == 0:
                 print("训练[%i]次后的成本为 %f" % (i, cost))
 
         self.params = params
@@ -199,12 +207,12 @@ if __name__ == "__main__":
     model = Model(train_x, train_y, layer_dims, 0.0075, 2000, True)
     model.model()
     prediction = model.predict(train_x)
-    print("预测准确率为：" + str(np.sum((prediction == train_y)) / train_y.shape[1]))
+    print("预测准确率为：" + str(np.sum((prediction == train_y)) / train_y.shape[1] * 100) + "%")
     prediction = model.predict(test_x)
-    print("预测准确率为：" + str(np.sum((prediction == test_y)) / test_y.shape[1]))
+    print("预测准确率为：" + str(np.sum((prediction == test_y)) / test_y.shape[1] * 100) + "%")
 
-    for index in range(0,50):
-        plt.imshow(test_x[:, index].reshape((64, 64, 3)))
-        plt.show()
-        print("图片实际标签: " + str(test_y[0, index]) + " 图片预测标签: " + str(prediction[0, index]) + ", 这是一个'" + classes[
-            np.squeeze(test_y[:, index])].decode("utf-8") + "' 图片")
+    # for index in range(0, 50):
+    #     plt.imshow(test_x[:, index].reshape((64, 64, 3)))
+    #     plt.show()
+    #     print("图片实际标签: " + str(test_y[0, index]) + " 图片预测标签: " + str(prediction[0, index]) + ", 这是一个'" + classes[
+    #         np.squeeze(test_y[:, index])].decode("utf-8") + "' 图片")
