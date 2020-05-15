@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from AI._4_深度神经网络.utils import sigmoid, relu, relu_backward, sigmoid_backward, load_data
+from AI._4_深度神经网络.utils import sigmoid, relu, relu_backward, sigmoid_backward, load_data, load_2D_dataset
 
 plt.rcParams["figure.figsize"] = (5.0, 4.0)
 plt.rcParams["image.interpolation"] = "nearest"
@@ -203,7 +203,8 @@ if __name__ == "__main__":
     train_x = train_x / 255
     test_x = test_x / 255
 
-    layer_dims = [12288, 20, 7, 5, 1]
+    # train_x, train_y, test_x, test_y = load_2D_dataset()
+    layer_dims = [train_x.shape[0], 20, 7, 5, 1]
     model = Model(train_x, train_y, layer_dims, 0.0075, 2000, True)
     model.model()
     prediction = model.predict(train_x)

@@ -1,6 +1,19 @@
 import h5py
 import numpy as np
+import scipy.io
+import matplotlib.pyplot as plt
 
+def load_2D_dataset():
+    data = scipy.io.loadmat("./datasets/data.mat")
+    train_X = data["X"].T
+    train_Y = data["y"].T
+    test_X = data["Xval"].T
+    test_Y = data["yval"].T
+
+    plt.scatter(train_X[0, :], train_X[1, :], c=train_Y.ravel(), cmap=plt.cm.Spectral)
+    plt.show()
+
+    return train_X, train_Y, test_X, test_Y
 
 def sigmoid(z):
     return 1 / (1 + np.exp(-z))
